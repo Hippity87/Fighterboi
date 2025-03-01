@@ -554,6 +554,9 @@ MonoBehaviour:
   speed: 5
   health: 100
   isPlayer1: 0
+  projectilePrefab: {fileID: 1503333931126730841, guid: 1865c9be9a0e6ac49a18d6dc403dad1a, type: 3}
+  projectileSpeed: 8
+  projectileCooldown: 0.5
   idleSprite: {fileID: -4279335207670442248, guid: 39b510bae001d3d4eb26897325d81123, type: 3}
   walkSprite: {fileID: -2629371917471695586, guid: 39b510bae001d3d4eb26897325d81123, type: 3}
   attackSprite: {fileID: -5887999399546451900, guid: 39b510bae001d3d4eb26897325d81123, type: 3}
@@ -563,6 +566,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 256
   groundCheckDistance: 0.5
+  facingRight: 1
 --- !u!212 &1609243585
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -667,6 +671,9 @@ MonoBehaviour:
   speed: 5
   health: 100
   isPlayer1: 1
+  projectilePrefab: {fileID: 1503333931126730841, guid: 1865c9be9a0e6ac49a18d6dc403dad1a, type: 3}
+  projectileSpeed: 8
+  projectileCooldown: 0.5
   idleSprite: {fileID: -5386224063510756577, guid: a926adf9016771a4393c5a626069c8ed, type: 3}
   walkSprite: {fileID: -5808611323221609074, guid: a926adf9016771a4393c5a626069c8ed, type: 3}
   attackSprite: {fileID: -4032524416640746754, guid: a926adf9016771a4393c5a626069c8ed, type: 3}
@@ -676,6 +683,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 256
   groundCheckDistance: 0.5
+  facingRight: 1
 --- !u!212 &1763647714
 SpriteRenderer:
   m_ObjectHideFlags: 0

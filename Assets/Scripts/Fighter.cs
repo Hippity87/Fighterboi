@@ -115,6 +115,10 @@ public class Fighter : MonoBehaviour
     public float speed = 5f;
     public int health = 100;
     public bool isPlayer1 = true;
+    public GameObject projectilePrefab; // Assign in Inspector
+    public float projectileSpeed = 8f;
+    public float projectileCooldown = 0.5f;
+    private float lastProjectileTime;
 
     // Add your sprites here—drag them in Unity Inspector
     public Sprite idleSprite;
@@ -192,6 +196,14 @@ public class Fighter : MonoBehaviour
         {
             spriteRenderer.sprite = idleSprite;
         }
+
+        // Projectile throw on 'B' for Player 1 or 'Keypad0' for Player 2
+        if ((isPlayer1 && Input.GetKeyDown(KeyCode.B) ||
+            (!isPlayer1 && Input.GetKeyDown(KeyCode.Keypad0))) &&
+            Time.time >= lastProjectileTime + projectileCooldown)
+        {
+            ThrowProjectile();
+        }
     }
 
     // Add a new field to determine the initial facing direction
@@ -245,72 +257,6 @@ public class Fighter : MonoBehaviour
 
 
 
-    // void Update()
-    // {
-    //     Move();
-
-    //     if (Input.GetKeyDown(KeyCode.Space))
-    //     {
-    //         Debug.Log("Spacebar pressed!");
-    //         bool isOnGround = IsGrounded();
-    //         Debug.Log("IsGrounded: " + isOnGround);
-
-    //         if (isOnGround)
-    //         {
-    //             Debug.Log("Jumping!");
-    //             Jump();
-    //         }
-    //         else
-    //         {
-    //             Debug.Log("Can't jump - not on ground!");
-    //         }
-    //     }
-
-
-
-
-
-
-
-    //     // Attack on 'V'
-    //     if (Input.GetKeyDown(KeyCode.V))
-    //     {
-    //         Debug.Log("V pressed!");
-    //         Attack(10);
-    //     }
-    //     // Keep attack sprite while 'V' is held
-    //     if (Input.GetKey(KeyCode.V))
-    //     {
-    //         spriteRenderer.sprite = attackSprite;
-    //     }
-    //     // Reset to idle 100ms after 'V' is released
-    //     if (Input.GetKeyUp(KeyCode.V) && Time.time >= lastAttackTime + 0.1f)
-    //     {
-    //         spriteRenderer.sprite = idleSprite;
-    //     }
-    // }
-
-    // void Move()
-    // {
-    //     float moveX = isPlayer1 ? Input.GetAxisRaw("Horizontal") : Input.GetAxisRaw("HorizontalP2");
-    //     rb.linearVelocity = new Vector2(moveX * speed, rb.linearVelocity.y); // Use Rigidbody2D for movement
-
-    //     // Flip sprite based on movement direction
-    //     if (moveX != 0)
-    //     {
-    //         // If moving right, don't flip (original facing direction)
-    //         // If moving left, flip the sprite
-    //         spriteRenderer.flipX = (moveX < 0);
-    //     }
-
-    //     // Only change sprite if not attacking
-    //     if (!Input.GetKey(KeyCode.V))
-    //     {
-    //         if (moveX != 0) spriteRenderer.sprite = walkSprite;
-    //         else spriteRenderer.sprite = idleSprite;
-    //     }
-    // }
-
     void Jump()
     {
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpVelocity); // Apply jump
@@ -341,4 +287,30 @@ public class Fighter : MonoBehaviour
         health -= damage;
         if (health <= 0) Debug.Log("KO!");
     }
+
+
+    void ThrowProjectile()
+    {
+        lastProjectileTime = Time.time;
+
+        // Create projectile slightly in front of the player
+        float spawnOffsetX = facingRight ? 0.6f : -0.6f;
+        Vector3 spawnPosition = transform.position + new Vector3(spawnOffsetX, 0, 0);
+
+        // Instantiate the projectile
+        GameObject projectile = Instantiate(projectilePrefab, spawnPosition, Quaternion.identity);
+
+        // Set direction based on player facing
+        int direction = facingRight ? 1 : -1;
+
+        // Add ProjectileComponent to the projectile
+        projectile.AddComponent<ProjectileComponent>().Initialize(direction * projectileSpeed, isPlayer1);
+
+        Debug.Log((isPlayer1 ? "Player 1" : "Player 2") + " threw a projectile!");
+    }
+
+
+
 }
+
+
