@@ -4,19 +4,62 @@ using UnityEngine.UI;
 
 public class MenuManager : MonoBehaviour
 {
-    public Canvas mainMenuCanvas;    // Assign in Inspector
-    public Canvas pauseMenuCanvas;   // Assign in Inspector
+    public static MenuManager Instance { get; private set; } // Singleton instance
+    private Canvas mainMenuCanvas;    // Will be found in MainMenu scene
+    private Canvas pauseMenuCanvas;   // Will be found in Game scene
     private bool isPaused = false;
+
+    void Awake()
+    {
+        // Singleton implementation
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject); // Destroy duplicate
+            return;
+        }
+        Instance = this;
+        DontDestroyOnLoad(gameObject); // Persist across scenes
+    }
 
     void Start()
     {
-        if (mainMenuCanvas != null) mainMenuCanvas.gameObject.SetActive(true);
+        // Find and activate canvas based on current scene
+        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+        if (currentSceneIndex == 0) // MainMenu scene
+        {
+            mainMenuCanvas = GameObject.Find("MainMenuCanvas")?.GetComponent<Canvas>();
+            if (mainMenuCanvas != null)
+            {
+                mainMenuCanvas.gameObject.SetActive(true);
+                GameObject[] fighters = GameObject.FindGameObjectsWithTag("Player");
+                foreach (GameObject fighter in fighters)
+                {
+                    if (fighter.scene == SceneManager.GetActiveScene())
+                    {
+                        fighter.SetActive(false);
+                    }
+                }
+            }
+        }
+        else if (currentSceneIndex == 1) // Game scene
+        {
+            pauseMenuCanvas = GameObject.Find("PauseMenuCanvas")?.GetComponent<Canvas>();
+            GameObject[] fighters = GameObject.FindGameObjectsWithTag("Player");
+            foreach (GameObject fighter in fighters)
+            {
+                if (fighter.scene == SceneManager.GetActiveScene())
+                {
+                    fighter.SetActive(true);
+                }
+            }
+        }
         Time.timeScale = 1; // Ensure game runs normally
     }
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
+        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+        if (currentSceneIndex == 1 && Input.GetKeyDown(KeyCode.Escape)) // Only pause in Game scene
         {
             TogglePause();
         }
@@ -24,7 +67,7 @@ public class MenuManager : MonoBehaviour
 
     public void StartGame()
     {
-        SceneManager.LoadScene("Game"); // Loads next scene in build profile
+        SceneManager.LoadScene("Game"); // Loads scene 1
     }
 
     public void ShowOptions()
@@ -48,17 +91,23 @@ public class MenuManager : MonoBehaviour
 
     private void TogglePause()
     {
-        isPaused = !isPaused;
-        pauseMenuCanvas.gameObject.SetActive(isPaused);
-        Time.timeScale = isPaused ? 0 : 1; // Freeze/unfreeze time
-        if (!isPaused && mainMenuCanvas != null) mainMenuCanvas.gameObject.SetActive(false);
+        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+        if (currentSceneIndex == 1) // Only toggle pause in Game scene
+        {
+            isPaused = !isPaused;
+            if (pauseMenuCanvas != null) pauseMenuCanvas.gameObject.SetActive(isPaused);
+            Time.timeScale = isPaused ? 0 : 1; // Freeze/unfreeze time
+        }
     }
 
     public void ExitToMainMenu()
     {
         Time.timeScale = 1;
-        SceneManager.LoadScene("MainMenu"); // Returns to first scene in build profile
+        SceneManager.LoadScene("MainMenu"); // Returns to scene 0
+    }
+
+    void OnDestroy()
+    {
+        if (Instance == this) Instance = null; // Clean up singleton on destroy
     }
 }
-
-//useless comment force recompile
