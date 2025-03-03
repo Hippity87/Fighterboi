@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 51d81adf4b270354593a8b34b40c3c7a
+guid: bd16a4b3fd06ae54db0891d53ddd4d83
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2727643885940239319
-    second: bckg_02_ocean_0
+      213: 794063144300308141
+    second: bckg_03_castle_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -46,7 +46,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
+  spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
@@ -113,7 +113,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: bckg_02_ocean_0
+      name: bckg_03_castle_0
       rect:
         serializedVersion: 2
         x: 0
@@ -128,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 92414c06656752ad0800000000000000
-      internalID: -2727643885940239319
+      spriteID: da6ef3df834150b00800000000000000
+      internalID: 794063144300308141
       vertices: []
       indices: 
       edges: []
@@ -138,7 +138,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
     indices: 
@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      bckg_03_castle_0: 794063144300308141
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -23,33 +23,50 @@ public class MenuManager : MonoBehaviour
 
     void Start()
     {
-        // Find and activate canvas based on current scene
+        // Force initial load to MainMenu if not already
         int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+        Debug.Log("Starting in scene: " + currentSceneIndex); // Debug startup scene
+        if (currentSceneIndex != 0)
+        {
+            SceneManager.LoadScene("MainMenu"); // Redirect to scene 0 on startup
+            return;
+        }
+
+        // Find and activate canvas based on current scene
         if (currentSceneIndex == 0) // MainMenu scene
         {
             mainMenuCanvas = GameObject.Find("MainMenuCanvas")?.GetComponent<Canvas>();
+            Debug.Log("MainMenuCanvas found: " + (mainMenuCanvas != null)); // Debug canvas
             if (mainMenuCanvas != null)
             {
-                mainMenuCanvas.gameObject.SetActive(true);
+                mainMenuCanvas.gameObject.SetActive(true); // Explicitly activate
+                Debug.Log("MainMenuCanvas activated: " + mainMenuCanvas.gameObject.activeSelf); // Debug activation
                 GameObject[] fighters = GameObject.FindGameObjectsWithTag("Player");
                 foreach (GameObject fighter in fighters)
                 {
                     if (fighter.scene == SceneManager.GetActiveScene())
                     {
                         fighter.SetActive(false);
+                        Debug.Log("Disabled fighter: " + fighter.name); // Debug fighter state
                     }
                 }
+            }
+            else
+            {
+                Debug.LogError("MainMenuCanvas not found in scene 0!");
             }
         }
         else if (currentSceneIndex == 1) // Game scene
         {
             pauseMenuCanvas = GameObject.Find("PauseMenuCanvas")?.GetComponent<Canvas>();
+            Debug.Log("PauseMenuCanvas found: " + (pauseMenuCanvas != null)); // Debug canvas
             GameObject[] fighters = GameObject.FindGameObjectsWithTag("Player");
             foreach (GameObject fighter in fighters)
             {
                 if (fighter.scene == SceneManager.GetActiveScene())
                 {
                     fighter.SetActive(true);
+                    Debug.Log("Enabled fighter: " + fighter.name); // Debug fighter state
                 }
             }
         }
@@ -68,6 +85,7 @@ public class MenuManager : MonoBehaviour
     public void StartGame()
     {
         SceneManager.LoadScene("Game"); // Loads scene 1
+        Debug.Log("Starting Game scene"); // Debug transition
     }
 
     public void ShowOptions()
@@ -97,6 +115,7 @@ public class MenuManager : MonoBehaviour
             isPaused = !isPaused;
             if (pauseMenuCanvas != null) pauseMenuCanvas.gameObject.SetActive(isPaused);
             Time.timeScale = isPaused ? 0 : 1; // Freeze/unfreeze time
+            Debug.Log("TogglePause: " + (isPaused ? "Paused" : "Resumed")); // Debug pause
         }
     }
 
@@ -104,6 +123,7 @@ public class MenuManager : MonoBehaviour
     {
         Time.timeScale = 1;
         SceneManager.LoadScene("MainMenu"); // Returns to scene 0
+        Debug.Log("Exiting to MainMenu"); // Debug transition
     }
 
     void OnDestroy()

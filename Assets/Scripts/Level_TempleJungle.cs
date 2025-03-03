@@ -3,10 +3,10 @@ using UnityEngine;
 public class TempleJungleLevel : Level
 {
     public TempleJungleLevel() : base(
-        Resources.Load<Sprite>("Sprites/bckg_04_jungletemple.png"), // Placeholder path
+        Resources.Load<Sprite>("Sprites/bckg_04_jungletemple"), // Placeholder path
         new Vector2(-5f, 0f),
         new Vector2(5f, 0f),
-        "Forest"
+        "TempleJungle"
     )
     { }
 

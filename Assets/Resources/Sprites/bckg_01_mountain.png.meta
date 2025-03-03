@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: ae05da0e7f5ee9549a9d32c392f6dbb9
+guid: 30aceda05ba87eb4888589c34d4f3495
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 8764766420908438265
-    second: bckg_04_jungletemple_0
+      213: -5804065852677162886
+    second: bckg_01_mountain_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -46,7 +46,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
+  spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
@@ -113,7 +113,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: bckg_04_jungletemple_0
+      name: bckg_01_mountain_0
       rect:
         serializedVersion: 2
         x: 0
@@ -128,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 9f2f4814f94b2a970800000000000000
-      internalID: 8764766420908438265
+      spriteID: a78f336bbd0d37fa0800000000000000
+      internalID: -5804065852677162886
       vertices: []
       indices: 
       edges: []
@@ -138,7 +138,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
     indices: 
@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      bckg_01_mountain_0: -5804065852677162886
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

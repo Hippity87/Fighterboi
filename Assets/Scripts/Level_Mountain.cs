@@ -3,10 +3,10 @@ using UnityEngine;
 public class MountainLevel : Level
 {
     public MountainLevel() : base(
-        Resources.Load<Sprite>("Sprites/bckg_01_mountain.png"), // Placeholder path
+        Resources.Load<Sprite>("Sprites/bckg_01_mountain"), // Placeholder path
         new Vector2(-4f, 0f),
         new Vector2(4f, 0f),
-        "Desert"
+        "Mountain"
     )
     { }
 

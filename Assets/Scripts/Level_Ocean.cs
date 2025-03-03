@@ -3,10 +3,10 @@ using UnityEngine;
 public class OceanLevel : Level
 {
     public OceanLevel() : base(
-        Resources.Load<Sprite>("Sprites/bckg_02_ocean.png"), // Placeholder path
+        Resources.Load<Sprite>("Sprites/bckg_02_ocean"), // Placeholder path
         new Vector2(-4f, 0f),
         new Vector2(4f, 0f),
-        "Desert"
+        "Ocean"
     )
     { }
 
