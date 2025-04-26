@@ -1,15 +1,27 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
+using TMPro; // Add this namespace for TextMeshPro
 
 public class LoadingScreenController : MonoBehaviour
 {
     private float loadingTime = 3f; // Placeholder loading time (seconds)
     private float timer = 0f;
+    private TextMeshProUGUI loadingText; // Change to TextMeshProUGUI
 
     void Start()
     {
-        Text loadingText = GameObject.Find("LoadingText")?.GetComponent<Text>();
+        // Find LoadingText, including inactive objects
+        TextMeshProUGUI[] texts = FindObjectsByType<TextMeshProUGUI>(FindObjectsSortMode.None);
+        loadingText = null;
+        foreach (TextMeshProUGUI text in texts)
+        {
+            if (text.name == "LoadingText")
+            {
+                loadingText = text;
+                break;
+            }
+        }
+
         if (loadingText == null)
         {
             Debug.LogError("LoadingText not found in LoadingScreen scene!");
@@ -23,7 +35,15 @@ public class LoadingScreenController : MonoBehaviour
         timer += Time.deltaTime;
         if (timer >= loadingTime)
         {
-            SceneManager.LoadScene("Game");
+            Debug.Log("Loading complete, transitioning to Game scene");
+            try
+            {
+                SceneManager.LoadScene("Game");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Failed to load Game scene: {e.Message}");
+            }
         }
     }
 }
