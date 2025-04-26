@@ -25,12 +25,57 @@ public class GameController : MonoBehaviour
 
     void Start()
     {
+        Debug.Log("GameController Start() called");
         // Initialize time scale regardless of canvas
         Time.timeScale = 0; // Start frozen until countdown finishes
+        Debug.Log($"Time.timeScale set to {Time.timeScale}");
         isPaused = false;
 
-        // Find UI elements
-        pauseMenuCanvas = GameObject.Find("PauseMenuCanvas")?.GetComponent<Canvas>();
+        // Find UI elements (include inactive objects)
+        // Note: FindObjectsByType with includeInactive is Unity 2023.2+, fallback if not available
+#if UNITY_2023_2_OR_NEWER
+        Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+#else
+        Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+#endif
+        foreach (Canvas canvas in canvases)
+        {
+            if (canvas.name == "PauseMenuCanvas")
+            {
+                pauseMenuCanvas = canvas;
+            }
+            else if (canvas.name == "OptionsCanvas")
+            {
+                optionsCanvas = canvas;
+            }
+            else if (canvas.name == "GameCanvas")
+            {
+                countdownText = canvas.GetComponentInChildren<TextMeshProUGUI>(true);
+                if (countdownText != null && countdownText.name != "CountdownText")
+                {
+                    countdownText = null; // Ensure we only use CountdownText
+                }
+
+                Slider[] sliders = canvas.GetComponentsInChildren<Slider>(true);
+                foreach (Slider slider in sliders)
+                {
+                    if (slider.name == "P1HealthBar") p1HealthBar = slider;
+                    else if (slider.name == "P2HealthBar") p2HealthBar = slider;
+                    else if (slider.name == "P1HealthBackdrop") p1HealthBackdrop = slider;
+                    else if (slider.name == "P2HealthBackdrop") p2HealthBackdrop = slider;
+                }
+
+                TextMeshProUGUI[] texts = canvas.GetComponentsInChildren<TextMeshProUGUI>(true);
+                foreach (TextMeshProUGUI text in texts)
+                {
+                    if (text.name == "CountdownText") countdownText = text;
+                    else if (text.name == "P1NameText") p1NameText = text;
+                    else if (text.name == "P2NameText") p2NameText = text;
+                }
+            }
+        }
+
+        // Validate PauseMenuCanvas
         if (pauseMenuCanvas == null)
         {
             Debug.LogError("PauseMenuCanvas not found in Game scene! Continuing without pause menu.");
@@ -60,7 +105,7 @@ public class GameController : MonoBehaviour
             }
         }
 
-        optionsCanvas = GameObject.Find("OptionsCanvas")?.GetComponent<Canvas>();
+        // Validate OptionsCanvas
         if (optionsCanvas == null)
         {
             Debug.LogError("OptionsCanvas not found in Game scene!");
@@ -90,20 +135,15 @@ public class GameController : MonoBehaviour
             }
         }
 
-        // Countdown timer
-        countdownText = GameObject.Find("CountdownText")?.GetComponent<TextMeshProUGUI>();
+        // Validate countdown and health bars
         if (countdownText == null)
         {
             Debug.LogError("CountdownText not found in Game scene!");
         }
-
-        // Health bars
-        p1HealthBar = GameObject.Find("P1HealthBar")?.GetComponent<Slider>();
-        p2HealthBar = GameObject.Find("P2HealthBar")?.GetComponent<Slider>();
-        p1HealthBackdrop = GameObject.Find("P1HealthBackdrop")?.GetComponent<Slider>();
-        p2HealthBackdrop = GameObject.Find("P2HealthBackdrop")?.GetComponent<Slider>();
-        p1NameText = GameObject.Find("P1NameText")?.GetComponent<TextMeshProUGUI>();
-        p2NameText = GameObject.Find("P2NameText")?.GetComponent<TextMeshProUGUI>();
+        else
+        {
+            Debug.Log($"CountdownText found, initial text: {countdownText.text}");
+        }
 
         if (p1HealthBar == null || p2HealthBar == null || p1HealthBackdrop == null || p2HealthBackdrop == null || p1NameText == null || p2NameText == null)
         {
@@ -125,11 +165,13 @@ public class GameController : MonoBehaviour
 
         // Enable fighters
         GameObject[] fighters = GameObject.FindGameObjectsWithTag("Player");
+        Debug.Log($"Found {fighters.Length} fighters with tag 'Player'");
         foreach (GameObject fighter in fighters)
         {
             if (fighter.scene == SceneManager.GetActiveScene())
             {
                 fighter.SetActive(true);
+                Debug.Log($"Activated fighter: {fighter.name}");
             }
         }
 
@@ -141,6 +183,7 @@ public class GameController : MonoBehaviour
     {
         if (!gameStarted)
         {
+            Debug.Log($"CountdownTimer: {countdownTimer}, Time.unscaledDeltaTime: {Time.unscaledDeltaTime}");
             countdownTimer -= Time.unscaledDeltaTime;
             if (countdownText != null)
             {
@@ -153,7 +196,12 @@ public class GameController : MonoBehaviour
                     countdownText.gameObject.SetActive(false);
                     gameStarted = true;
                     Time.timeScale = 1;
+                    Debug.Log("Countdown finished, game started, Time.timeScale set to 1");
                 }
+            }
+            else
+            {
+                Debug.LogWarning("countdownText is null, skipping countdown update");
             }
         }
 
@@ -170,7 +218,7 @@ public class GameController : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.Q)) TakeDamage(1, 10f); // Damage P1
             if (Input.GetKeyDown(KeyCode.P)) TakeDamage(2, 10f); // Damage P2
 
-            if (Input.GetKeyDown(KeyCode.F1) && !optionsCanvas.gameObject.activeSelf)
+            if (Input.GetKeyDown(KeyCode.F1) && (optionsCanvas == null || !optionsCanvas.gameObject.activeSelf))
             {
                 TogglePause();
             }
@@ -198,51 +246,63 @@ public class GameController : MonoBehaviour
     public void ShowOptions()
     {
         if (pauseMenuCanvas != null) pauseMenuCanvas.gameObject.SetActive(false);
-        optionsCanvas.gameObject.SetActive(true);
-
-        // Update sliders with current settings
-        Slider[] sliders = optionsCanvas.GetComponentsInChildren<Slider>(true);
-        foreach (Slider slider in sliders)
+        if (optionsCanvas != null)
         {
-            if (slider.name == "MasterVolumeSlider") slider.value = GameState.MasterVolume;
-            else if (slider.name == "MusicVolumeSlider") slider.value = GameState.MusicVolume;
-            else if (slider.name == "SfxVolumeSlider") slider.value = GameState.SfxVolume;
-            else if (slider.name == "BrightnessSlider") slider.value = GameState.Brightness;
+            optionsCanvas.gameObject.SetActive(true);
+
+            // Update sliders with current settings
+            Slider[] sliders = optionsCanvas.GetComponentsInChildren<Slider>(true);
+            foreach (Slider slider in sliders)
+            {
+                if (slider.name == "MasterVolumeSlider") slider.value = GameState.MasterVolume;
+                else if (slider.name == "MusicVolumeSlider") slider.value = GameState.MusicVolume;
+                else if (slider.name == "SfxVolumeSlider") slider.value = GameState.SfxVolume;
+                else if (slider.name == "BrightnessSlider") slider.value = GameState.Brightness;
+            }
         }
     }
 
     public void ApplyOptions()
     {
-        Slider[] sliders = optionsCanvas.GetComponentsInChildren<Slider>(true);
-        foreach (Slider slider in sliders)
+        if (optionsCanvas != null)
         {
-            if (slider.name == "MasterVolumeSlider") GameState.MasterVolume = slider.value;
-            else if (slider.name == "MusicVolumeSlider") GameState.MusicVolume = slider.value;
-            else if (slider.name == "SfxVolumeSlider") GameState.SfxVolume = slider.value;
-            else if (slider.name == "BrightnessSlider") GameState.Brightness = slider.value;
+            Slider[] sliders = optionsCanvas.GetComponentsInChildren<Slider>(true);
+            foreach (Slider slider in sliders)
+            {
+                if (slider.name == "MasterVolumeSlider") GameState.MasterVolume = slider.value;
+                else if (slider.name == "MusicVolumeSlider") GameState.MusicVolume = slider.value;
+                else if (slider.name == "SfxVolumeSlider") GameState.SfxVolume = slider.value;
+                else if (slider.name == "BrightnessSlider") GameState.Brightness = slider.value;
+            }
+            GameState.ApplySettings();
+            HideOptions();
         }
-        GameState.ApplySettings();
-        HideOptions();
     }
 
     public void ResetOptions()
     {
         GameState.ResetSettings();
-        Slider[] sliders = optionsCanvas.GetComponentsInChildren<Slider>(true);
-        foreach (Slider slider in sliders)
+        if (optionsCanvas != null)
         {
-            if (slider.name == "MasterVolumeSlider") slider.value = GameState.MasterVolume;
-            else if (slider.name == "MusicVolumeSlider") slider.value = GameState.MusicVolume;
-            else if (slider.name == "SfxVolumeSlider") slider.value = GameState.SfxVolume;
-            else if (slider.name == "BrightnessSlider") slider.value = GameState.Brightness;
+            Slider[] sliders = optionsCanvas.GetComponentsInChildren<Slider>(true);
+            foreach (Slider slider in sliders)
+            {
+                if (slider.name == "MasterVolumeSlider") slider.value = GameState.MasterVolume;
+                else if (slider.name == "MusicVolumeSlider") slider.value = GameState.MusicVolume;
+                else if (slider.name == "SfxVolumeSlider") slider.value = GameState.SfxVolume;
+                else if (slider.name == "BrightnessSlider") slider.value = GameState.Brightness;
+            }
         }
     }
 
     public void HideOptions()
     {
-        optionsCanvas.gameObject.SetActive(false);
-        if (pauseMenuCanvas != null) pauseMenuCanvas.gameObject.SetActive(isPaused);
-        if (!isPaused) Time.timeScale = 1;
+        if (optionsCanvas != null)
+        {
+            optionsCanvas.gameObject.SetActive(false);
+            if (pauseMenuCanvas != null) pauseMenuCanvas.gameObject.SetActive(isPaused);
+            if (!isPaused) Time.timeScale = 1;
+        }
     }
 
     public void ExitToMainMenu()
