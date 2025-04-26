@@ -6,36 +6,25 @@ public class ProjectileComponent : MonoBehaviour
     private bool fromPlayer1;
     private Rigidbody2D rb;
 
+    void Start()
+    {
+        rb = GetComponent<Rigidbody2D>();
+    }
+
     public void Initialize(float projectileSpeed, bool isFromPlayer1)
     {
         speed = projectileSpeed;
         fromPlayer1 = isFromPlayer1;
-
-        // Add Rigidbody2D if it doesn't exist
-        rb = GetComponent<Rigidbody2D>();
-        if (rb == null)
-        {
-            rb = gameObject.AddComponent<Rigidbody2D>();
-            rb.gravityScale = 0.5f; // Low gravity for slight arc
-            rb.constraints = RigidbodyConstraints2D.FreezeRotation;
-        }
-
-        // Add collider if it doesn't exist
-        if (GetComponent<Collider2D>() == null)
-        {
-            CircleCollider2D collider = gameObject.AddComponent<CircleCollider2D>();
-            collider.radius = 0.2f;
-            collider.isTrigger = true; // Use trigger for projectiles
-        }
-
-        // Set initial velocity
-        rb.linearVelocity = new Vector2(speed, 1f); // Add slight upward motion
+        rb.linearVelocity = (fromPlayer1 ? Vector2.right : Vector2.left) * speed;
     }
 
     void Update()
     {
-        // Destroy projectile if it goes too far off-screen
-        if (Mathf.Abs(transform.position.x) > 20 || transform.position.y < -10)
+        if (MenuManager.IsPaused) return; // Skip logic if paused
+
+        // Destroy projectile if off-screen
+        Vector3 viewportPos = Camera.main.WorldToViewportPoint(transform.position);
+        if (viewportPos.x < 0 || viewportPos.x > 1)
         {
             Destroy(gameObject);
         }
@@ -43,16 +32,12 @@ public class ProjectileComponent : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        // Check if the projectile hit a fighter
-        Fighter fighter = other.GetComponent<Fighter>();
+        if (MenuManager.IsPaused) return; // Skip collision if paused
 
+        Fighter fighter = other.GetComponent<Fighter>();
         if (fighter != null && fighter.isPlayer1 != fromPlayer1)
         {
-            // Deal damage to the opponent
-            fighter.TakeDamage(5);
-            Debug.Log("Projectile hit " + (fighter.isPlayer1 ? "Player 1" : "Player 2") + "!");
-
-            // Destroy the projectile
+            fighter.TakeDamage(10);
             Destroy(gameObject);
         }
     }

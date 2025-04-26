@@ -5,202 +5,126 @@ public class Fighter : MonoBehaviour
     public float speed = 5f;
     public int health = 100;
     public bool isPlayer1 = true;
-    public GameObject projectilePrefab; // Assign in Inspector
+    public GameObject projectilePrefab;
     public float projectileSpeed = 8f;
     public float projectileCooldown = 0.5f;
     private float lastProjectileTime;
-
-    // Add sprites here—drag them in Unity Inspector
     public Sprite idleSprite;
     public Sprite walkSprite;
     public Sprite attackSprite;
     private SpriteRenderer spriteRenderer;
-    private float lastAttackTime; // Track when attack started
-    private Rigidbody2D rb; // For physics/jumping
-
-    // Jump settings
-    public float jumpVelocity = 10f; // Default jump speed
-    public float gravityScale = 3f; // Default gravity multiplier
-    public LayerMask groundLayer; // Assign "Ground" layer in Inspector
-    public float groundCheckDistance = 0.5f; // How far to check for ground
+    private float lastAttackTime;
+    private Rigidbody2D rb;
+    public float jumpVelocity = 10f;
+    public float gravityScale = 3f;
+    public LayerMask groundLayer;
+    public float groundCheckDistance = 0.5f;
+    public bool facingRight = true;
 
     void Start()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
-        rb = GetComponent<Rigidbody2D>(); // Get or add Rigidbody2D
-        if (spriteRenderer == null)
-        {
-            Debug.LogError("No SpriteRenderer on " + gameObject.name + "! Please add one.");
-            return;
-        }
+        rb = GetComponent<Rigidbody2D>();
         if (rb == null)
         {
-            rb = gameObject.AddComponent<Rigidbody2D>(); // Add if missing
-            rb.gravityScale = gravityScale; // Set gravity
-            rb.freezeRotation = true; // Prevent spinning
+            Debug.LogError($"Rigidbody2D missing on {gameObject.name}! Please add a Rigidbody2D component.");
+            return;
         }
-        // Assign this GameObject to the "Player" layer
-        gameObject.layer = LayerMask.NameToLayer("Player");
-        spriteRenderer.sprite = idleSprite;
-        // Player 1 starts facing right, Player 2 starts facing left
-        facingRight = isPlayer1;
-        spriteRenderer.flipX = !facingRight;
+        rb.gravityScale = gravityScale;
     }
-
 
     void Update()
     {
+        if (rb == null || MenuManager.IsPaused) return; // Skip if no Rigidbody2D or paused
+
+        if (health <= 0) return; // Stop if dead
+
+        // Handle movement
         Move();
 
-        // Jump based on player
-        if ((isPlayer1 && Input.GetKeyDown(KeyCode.Space)) ||
-            (!isPlayer1 && Input.GetKeyDown(KeyCode.RightControl)))
+        // Player 1 inputs
+        if (isPlayer1)
         {
-            bool isOnGround = IsGrounded();
-            Debug.Log("Is Grounded: " + isOnGround);
-            if (isOnGround)
+            if (Input.GetKeyDown(KeyCode.W)) Jump();
+            if (Input.GetKeyDown(KeyCode.Q)) Attack(10);
+            if (Input.GetKeyDown(KeyCode.E) && Time.time - lastProjectileTime >= projectileCooldown)
             {
-                Debug.Log((isPlayer1 ? "Player 1" : "Player 2") + " jumped!");
-                Jump();
+                ThrowProjectile();
+                lastProjectileTime = Time.time;
             }
         }
-
-        // Attack based on player
-        if ((isPlayer1 && Input.GetKeyDown(KeyCode.V)) ||
-            (!isPlayer1 && Input.GetKeyDown(KeyCode.RightShift)))
+        // Player 2 inputs
+        else
         {
-            Debug.Log((isPlayer1 ? "Player 1" : "Player 2") + " attacking!");
-            Attack(10);
-        }
-
-        // Keep attack sprite while attack key is held
-        if ((isPlayer1 && Input.GetKey(KeyCode.V)) ||
-            (!isPlayer1 && Input.GetKey(KeyCode.RightShift)))
-        {
-            spriteRenderer.sprite = attackSprite;
-        }
-
-        // Reset to idle after attack key is released
-        if ((isPlayer1 && Input.GetKeyUp(KeyCode.V) && Time.time >= lastAttackTime + 0.1f) ||
-            (!isPlayer1 && Input.GetKeyUp(KeyCode.RightShift) && Time.time >= lastAttackTime + 0.1f))
-        {
-            spriteRenderer.sprite = idleSprite;
-        }
-
-        // Projectile throw on 'B' for Player 1 or 'Keypad0' for Player 2
-        if ((isPlayer1 && Input.GetKeyDown(KeyCode.B) ||
-            (!isPlayer1 && Input.GetKeyDown(KeyCode.Keypad0))) &&
-            Time.time >= lastProjectileTime + projectileCooldown)
-        {
-            ThrowProjectile();
+            if (Input.GetKeyDown(KeyCode.UpArrow)) Jump();
+            if (Input.GetKeyDown(KeyCode.RightControl)) Attack(10);
+            if (Input.GetKeyDown(KeyCode.RightShift) && Time.time - lastProjectileTime >= projectileCooldown)
+            {
+                ThrowProjectile();
+                lastProjectileTime = Time.time;
+            }
         }
     }
-
-    // Add a new field to determine the initial facing direction
-    public bool facingRight = true;
 
     void Move()
     {
-        // Player 1: Uses Horizontal axis (arrow keys/WASD)
-        // Player 2: Will use J/L keys for left/right
-        float moveX = 0;
+        float moveInput = isPlayer1 ? Input.GetAxisRaw("Horizontal") : Input.GetAxisRaw("Horizontal2");
+        rb.linearVelocity = new Vector2(moveInput * speed, rb.linearVelocity.y);
 
-        if (isPlayer1)
+        // Update sprite based on movement
+        if (moveInput != 0)
         {
-            moveX = Input.GetAxisRaw("Horizontal");
+            spriteRenderer.sprite = walkSprite;
+            if ((moveInput > 0 && !facingRight) || (moveInput < 0 && facingRight)) Flip();
         }
-        else
+        else if (Time.time - lastAttackTime > 0.5f)
         {
-            // For Player 2, use different keys
-            if (Input.GetKey(KeyCode.J)) moveX = -1;
-            if (Input.GetKey(KeyCode.L)) moveX = 1;
-        }
-
-        rb.linearVelocity = new Vector2(moveX * speed, rb.linearVelocity.y);
-
-        // Handle sprite direction - flip only when needed
-        if (moveX > 0 && !facingRight) // Moving right but facing left
-        {
-            Flip();
-        }
-        else if (moveX < 0 && facingRight) // Moving left but facing right
-        {
-            Flip();
-        }
-
-        // Only change sprite if not attacking
-        if ((isPlayer1 && !Input.GetKey(KeyCode.V)) ||
-            (!isPlayer1 && !Input.GetKey(KeyCode.RightShift)))
-        {
-            if (moveX != 0) spriteRenderer.sprite = walkSprite;
-            else spriteRenderer.sprite = idleSprite;
+            spriteRenderer.sprite = idleSprite;
         }
     }
 
-    // New method to flip the character
     void Flip()
     {
         facingRight = !facingRight;
-        spriteRenderer.flipX = !spriteRenderer.flipX;
+        spriteRenderer.flipX = !facingRight;
     }
-
-
-
 
     void Jump()
     {
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpVelocity); // Apply jump
-        Debug.Log("Jumped with velocity: " + jumpVelocity);
+        if (IsGrounded())
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpVelocity);
+        }
     }
 
     bool IsGrounded()
     {
-        // Check for ground in a small radius below the player
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position + new Vector3(0, -0.5f, 0), 0.2f, groundLayer);
-
-        // Visualize the ground check area in the Scene view
-        Debug.DrawRay(transform.position, Vector3.down * 0.7f, Color.yellow);
-
-        // If we found any ground colliders, we're grounded
-        return colliders.Length > 0;
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.down, groundCheckDistance, groundLayer);
+        return hit.collider != null;
     }
 
     public void Attack(int damage)
     {
         spriteRenderer.sprite = attackSprite;
         lastAttackTime = Time.time;
-        Debug.Log("Attacking for " + damage + " damage!");
+
+        // Attack logic can be expanded (e.g., hitbox detection)
     }
 
     public void TakeDamage(int damage)
     {
         health -= damage;
-        if (health <= 0) Debug.Log("KO!");
+        if (health <= 0)
+        {
+            Debug.Log(gameObject.name + " is defeated!");
+        }
     }
-
 
     void ThrowProjectile()
     {
-        lastProjectileTime = Time.time;
-
-        // Create projectile slightly in front of the player
-        float spawnOffsetX = facingRight ? 0.6f : -0.6f;
-        Vector3 spawnPosition = transform.position + new Vector3(spawnOffsetX, 0, 0);
-
-        // Instantiate the projectile
+        Vector2 spawnPosition = transform.position + (facingRight ? Vector3.right : Vector3.left) * 0.5f;
         GameObject projectile = Instantiate(projectilePrefab, spawnPosition, Quaternion.identity);
-
-        // Set direction based on player facing
-        int direction = facingRight ? 1 : -1;
-
-        // Add ProjectileComponent to the projectile
-        projectile.AddComponent<ProjectileComponent>().Initialize(direction * projectileSpeed, isPlayer1);
-
-        Debug.Log((isPlayer1 ? "Player 1" : "Player 2") + " threw a projectile!");
+        ProjectileComponent projectileComp = projectile.GetComponent<ProjectileComponent>();
+        projectileComp.Initialize(projectileSpeed, isPlayer1);
     }
-
-
-
 }
-
-
