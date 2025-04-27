@@ -8,16 +8,18 @@ public abstract class Level
     public Vector2 player2SpawnPoint; // Spawn point for Player 2
     public string levelName; // Name for identification
     public GameObject groundPrefab; // Prefab for the ground (can be a Sprite Shape for curved terrain)
-    public List<LevelObject> additionalObjects; // Additional objects like platforms, obstacles, or power-ups
+    public List<LevelObject> platformObjects; // Platforms for the level
+    public List<LevelObject> powerUpObjects; // Power-ups for the level
 
-    public Level(Sprite background, Vector2 p1Spawn, Vector2 p2Spawn, string name, GameObject ground = null, List<LevelObject> objects = null)
+    public Level(Sprite background, Vector2 p1Spawn, Vector2 p2Spawn, string name, GameObject ground = null, List<LevelObject> platforms = null, List<LevelObject> powerUps = null)
     {
         backgroundSprite = background;
         player1SpawnPoint = p1Spawn;
         player2SpawnPoint = p2Spawn;
         levelName = name;
         groundPrefab = ground; // Passed in from LevelLoader, assigned in Inspector
-        additionalObjects = objects ?? new List<LevelObject>(); // Initialize empty list if null
+        platformObjects = platforms ?? new List<LevelObject>(); // Initialize empty list if null
+        powerUpObjects = powerUps ?? new List<LevelObject>(); // Initialize empty list if null
     }
 
     // Virtual method for level initialization, can be overridden by derived classes
@@ -58,23 +60,32 @@ public abstract class Level
             Debug.LogWarning($"Ground prefab not assigned for level {levelName}. Fighters may not have a surface to land on.");
         }
 
-        // Instantiate additional objects (e.g., platforms)
-        foreach (var obj in additionalObjects)
+        // Instantiate platforms
+        foreach (var platform in platformObjects)
         {
-            GameObject instantiatedObj = Object.Instantiate(obj.prefab, obj.position, Quaternion.identity, levelParent.transform);
-            instantiatedObj.name = obj.name;
-            instantiatedObj.tag = obj.tag; // Set the tag (e.g., "Ground" for platforms)
-            Debug.Log($"Instantiated additional object {obj.name} for level {levelName} with tag {obj.tag}");
+            GameObject instantiatedObj = Object.Instantiate(platform.prefab, platform.position, Quaternion.identity, levelParent.transform);
+            instantiatedObj.name = platform.name;
+            instantiatedObj.tag = platform.tag; // Should be "Ground" for platforms
+            Debug.Log($"Instantiated platform {platform.name} for level {levelName} with tag {platform.tag}");
+        }
+
+        // Instantiate power-ups
+        foreach (var powerUp in powerUpObjects)
+        {
+            GameObject instantiatedObj = Object.Instantiate(powerUp.prefab, powerUp.position, Quaternion.identity, levelParent.transform);
+            instantiatedObj.name = powerUp.name;
+            instantiatedObj.tag = powerUp.tag; // Will be "PowerUp" for power-ups
+            Debug.Log($"Instantiated power-up {powerUp.name} for level {levelName} with tag {powerUp.tag}");
         }
     }
 }
 
 public class LevelObject
 {
-    public GameObject prefab; // Prefab for the object (e.g., platform, obstacle)
+    public GameObject prefab; // Prefab for the object (e.g., platform, power-up)
     public Vector3 position; // Position in the scene
     public string name; // Name for identification in the Hierarchy
-    public string tag; // Tag for collision detection (e.g., "Ground")
+    public string tag; // Tag for collision detection (e.g., "Ground" or "PowerUp")
 
     public LevelObject(GameObject prefab, Vector3 position, string name, string tag = "Untagged")
     {
