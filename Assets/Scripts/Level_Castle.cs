@@ -2,18 +2,18 @@ using UnityEngine;
 
 public class CastleLevel : Level
 {
-    public CastleLevel() : base(
-        Resources.Load<Sprite>("Sprites/bckg_03_castle"), // Placeholder path
+    public CastleLevel(GameObject groundPrefab) : base(
+        Resources.Load<Sprite>("Sprites/bckg_03_castle"),
         new Vector2(-4f, 0f),
         new Vector2(4f, 0f),
-        "Castle"
+        "Castle",
+        groundPrefab
     )
     { }
 
-    public override void InitializeLevel(GameObject backgroundObj)
+    public override void InitializeLevel(GameObject backgroundObj, GameObject levelParent)
     {
-        backgroundObj.GetComponent<SpriteRenderer>().sprite = backgroundSprite;
-        // Future: Add castle-specific power-ups (e.g., health pack)
+        base.InitializeLevel(backgroundObj, levelParent);
         Debug.Log("Castle Level initialized!");
     }
 }

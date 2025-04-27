@@ -2,18 +2,18 @@ using UnityEngine;
 
 public class OceanLevel : Level
 {
-    public OceanLevel() : base(
-        Resources.Load<Sprite>("Sprites/bckg_02_ocean"), // Placeholder path
+    public OceanLevel(GameObject groundPrefab) : base(
+        Resources.Load<Sprite>("Sprites/bckg_02_ocean"),
         new Vector2(-4f, 0f),
         new Vector2(4f, 0f),
-        "Ocean"
+        "Ocean",
+        groundPrefab
     )
     { }
 
-    public override void InitializeLevel(GameObject backgroundObj)
+    public override void InitializeLevel(GameObject backgroundObj, GameObject levelParent)
     {
-        backgroundObj.GetComponent<SpriteRenderer>().sprite = backgroundSprite;
-        // Future: Add ocean-specific power-ups (e.g., health pack)
+        base.InitializeLevel(backgroundObj, levelParent);
         Debug.Log("Ocean Level initialized!");
     }
 }
