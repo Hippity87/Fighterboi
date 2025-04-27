@@ -2,43 +2,37 @@ using UnityEngine;
 
 public class ProjectileComponent : MonoBehaviour
 {
-    private float speed;
-    private bool fromPlayer1;
-    private Rigidbody2D rb;
+    public float damage = 10f; // Amount of damage this projectile deals
+    private GameController gameController;
 
     void Start()
     {
-        rb = GetComponent<Rigidbody2D>();
-    }
-
-    public void Initialize(float projectileSpeed, bool isFromPlayer1)
-    {
-        speed = projectileSpeed;
-        fromPlayer1 = isFromPlayer1;
-        rb.linearVelocity = (fromPlayer1 ? Vector2.right : Vector2.left) * speed;
-    }
-
-    void Update()
-    {
-        if (MenuManager.IsPaused) return; // Skip logic if paused
-
-        // Destroy projectile if off-screen
-        Vector3 viewportPos = Camera.main.WorldToViewportPoint(transform.position);
-        if (viewportPos.x < 0 || viewportPos.x > 1)
+        // Use FindFirstObjectByType instead of FindObjectOfType
+        gameController = FindFirstObjectByType<GameController>();
+        if (gameController == null)
         {
-            Destroy(gameObject);
+            Debug.LogError("GameController not found in the scene!");
         }
     }
 
-    void OnTriggerEnter2D(Collider2D other)
+    private void OnTriggerEnter2D(Collider2D other)
     {
-        if (MenuManager.IsPaused) return; // Skip collision if paused
-
+        // Check if the object we collided with is a Fighter
         Fighter fighter = other.GetComponent<Fighter>();
-        if (fighter != null && fighter.isPlayer1 != fromPlayer1)
+        if (fighter != null)
         {
-            fighter.TakeDamage(10);
-            Destroy(gameObject);
+            if (gameController != null)
+            {
+                // Determine which player this fighter is
+                int player = fighter.isPlayer1 ? 1 : 2;
+                gameController.TakeDamage(player, damage);
+                Debug.Log($"Projectile hit {other.gameObject.name}, dealing {damage} damage to Player {player}");
+            }
+            else
+            {
+                Debug.LogWarning("GameController not found, cannot apply damage!");
+            }
+            Destroy(gameObject); // Destroy the projectile after hitting
         }
     }
 }

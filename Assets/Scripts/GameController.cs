@@ -5,14 +5,14 @@ using TMPro;
 
 public class GameController : MonoBehaviour
 {
-    private Canvas pauseMenuCanvas;
-    private Canvas optionsCanvas;
+    [SerializeField] private Canvas pauseMenuCanvas;
+    [SerializeField] private Canvas optionsCanvas;
+    [SerializeField] private Canvas gameCanvas;
     private bool isPaused = false;
     private bool gameStarted = false;
-    private float countdownTimer = 4f; // 3, 2, 1, Fight! (1 second each)
+    private float countdownTimer = 4f;
     private TextMeshProUGUI countdownText;
 
-    // Health bar UI elements
     private Slider p1HealthBar;
     private Slider p2HealthBar;
     private Slider p1HealthBackdrop;
@@ -21,69 +21,22 @@ public class GameController : MonoBehaviour
     private TextMeshProUGUI p2NameText;
     private float p1Health = 100f;
     private float p2Health = 100f;
-    private float backdropLerpSpeed = 2f; // Speed of backdrop animation
+    private float backdropLerpSpeed = 2f;
 
     void Start()
     {
         Debug.Log("GameController Start() called");
-        // Initialize time scale regardless of canvas
-        Time.timeScale = 0; // Start frozen until countdown finishes
+        Time.timeScale = 0;
         Debug.Log($"Time.timeScale set to {Time.timeScale}");
         isPaused = false;
 
-        // Find UI elements (include inactive objects)
-        // Note: FindObjectsByType with includeInactive is Unity 2023.2+, fallback if not available
-#if UNITY_2023_2_OR_NEWER
-        Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-#else
-        Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
-#endif
-        foreach (Canvas canvas in canvases)
-        {
-            if (canvas.name == "PauseMenuCanvas")
-            {
-                pauseMenuCanvas = canvas;
-            }
-            else if (canvas.name == "OptionsCanvas")
-            {
-                optionsCanvas = canvas;
-            }
-            else if (canvas.name == "GameCanvas")
-            {
-                countdownText = canvas.GetComponentInChildren<TextMeshProUGUI>(true);
-                if (countdownText != null && countdownText.name != "CountdownText")
-                {
-                    countdownText = null; // Ensure we only use CountdownText
-                }
-
-                Slider[] sliders = canvas.GetComponentsInChildren<Slider>(true);
-                foreach (Slider slider in sliders)
-                {
-                    if (slider.name == "P1HealthBar") p1HealthBar = slider;
-                    else if (slider.name == "P2HealthBar") p2HealthBar = slider;
-                    else if (slider.name == "P1HealthBackdrop") p1HealthBackdrop = slider;
-                    else if (slider.name == "P2HealthBackdrop") p2HealthBackdrop = slider;
-                }
-
-                TextMeshProUGUI[] texts = canvas.GetComponentsInChildren<TextMeshProUGUI>(true);
-                foreach (TextMeshProUGUI text in texts)
-                {
-                    if (text.name == "CountdownText") countdownText = text;
-                    else if (text.name == "P1NameText") p1NameText = text;
-                    else if (text.name == "P2NameText") p2NameText = text;
-                }
-            }
-        }
-
-        // Validate PauseMenuCanvas
         if (pauseMenuCanvas == null)
         {
-            Debug.LogError("PauseMenuCanvas not found in Game scene! Continuing without pause menu.");
+            Debug.LogError("PauseMenuCanvas not assigned in GameController Inspector! Continuing without pause menu.");
         }
         else
         {
             pauseMenuCanvas.gameObject.SetActive(isPaused);
-            // Assign PauseMenuCanvas button events
             Button[] pauseButtons = pauseMenuCanvas.GetComponentsInChildren<Button>(true);
             foreach (Button button in pauseButtons)
             {
@@ -105,15 +58,13 @@ public class GameController : MonoBehaviour
             }
         }
 
-        // Validate OptionsCanvas
         if (optionsCanvas == null)
         {
-            Debug.LogError("OptionsCanvas not found in Game scene!");
+            Debug.LogError("OptionsCanvas not assigned in GameController Inspector!");
         }
         else
         {
             optionsCanvas.gameObject.SetActive(false);
-            // Assign OptionsCanvas button events
             Button[] optionsButtons = optionsCanvas.GetComponentsInChildren<Button>(true);
             foreach (Button button in optionsButtons)
             {
@@ -135,10 +86,54 @@ public class GameController : MonoBehaviour
             }
         }
 
-        // Validate countdown and health bars
+        if (gameCanvas == null)
+        {
+            Debug.LogError("GameCanvas not assigned in GameController Inspector!");
+            return; // Exit early to avoid further issues
+        }
+
+        // Revert to the original countdownText assignment logic
+        countdownText = gameCanvas.GetComponentInChildren<TextMeshProUGUI>(true);
+        if (countdownText != null)
+        {
+            Debug.Log($"First TextMeshProUGUI found: {countdownText.name}");
+            if (countdownText.name != "CountdownText")
+            {
+                Debug.Log($"First TextMeshProUGUI is not CountdownText, setting to null");
+                countdownText = null;
+            }
+        }
+        else
+        {
+            Debug.LogWarning("No TextMeshProUGUI components found under GameCanvas on first attempt");
+        }
+
+        // Loop through all TextMeshProUGUI components to find CountdownText
+        TextMeshProUGUI[] texts = gameCanvas.GetComponentsInChildren<TextMeshProUGUI>(true);
+        Debug.Log($"Found {texts.Length} TextMeshProUGUI components under GameCanvas");
+        foreach (TextMeshProUGUI text in texts)
+        {
+            Debug.Log($"TextMeshProUGUI component: {text.name}");
+            if (text.name == "CountdownText") countdownText = text;
+            else if (text.name == "P1NameText") p1NameText = text;
+            else if (text.name == "P2NameText") p2NameText = text;
+        }
+
+        // Find all Slider components under gameCanvas
+        Slider[] sliders = gameCanvas.GetComponentsInChildren<Slider>(true);
+        Debug.Log($"Found {sliders.Length} Slider components under GameCanvas");
+        foreach (Slider slider in sliders)
+        {
+            Debug.Log($"Slider component: {slider.name}");
+            if (slider.name == "P1HealthBar") p1HealthBar = slider;
+            else if (slider.name == "P2HealthBar") p2HealthBar = slider;
+            else if (slider.name == "P1HealthBackdrop") p1HealthBackdrop = slider;
+            else if (slider.name == "P2HealthBackdrop") p2HealthBackdrop = slider;
+        }
+
         if (countdownText == null)
         {
-            Debug.LogError("CountdownText not found in Game scene!");
+            Debug.LogError("CountdownText not found under GameCanvas! Please ensure a TextMeshProUGUI object named 'CountdownText' exists under GameCanvas.");
         }
         else
         {
@@ -147,7 +142,7 @@ public class GameController : MonoBehaviour
 
         if (p1HealthBar == null || p2HealthBar == null || p1HealthBackdrop == null || p2HealthBackdrop == null || p1NameText == null || p2NameText == null)
         {
-            Debug.LogError("One or more health bar UI elements not found in Game scene!");
+            Debug.LogError("One or more health bar UI elements not found under GameCanvas!");
         }
         else
         {
@@ -163,7 +158,6 @@ public class GameController : MonoBehaviour
             p2NameText.text = GameState.Player2Character ?? "Player 2";
         }
 
-        // Enable fighters
         GameObject[] fighters = GameObject.FindGameObjectsWithTag("Player");
         Debug.Log($"Found {fighters.Length} fighters with tag 'Player'");
         foreach (GameObject fighter in fighters)
@@ -175,7 +169,6 @@ public class GameController : MonoBehaviour
             }
         }
 
-        // Apply settings
         GameState.ApplySettings();
     }
 
@@ -202,21 +195,26 @@ public class GameController : MonoBehaviour
             else
             {
                 Debug.LogWarning("countdownText is null, skipping countdown update");
+                // Fallback: Start the game if countdownText is missing
+                if (countdownTimer <= 0)
+                {
+                    gameStarted = true;
+                    Time.timeScale = 1;
+                    Debug.Log("CountdownText is missing, but timer expired, starting game anyway");
+                }
             }
         }
 
         if (gameStarted)
         {
-            // Update health bar backdrops
             if (p1HealthBackdrop != null && p2HealthBackdrop != null)
             {
                 p1HealthBackdrop.value = Mathf.Lerp(p1HealthBackdrop.value, p1Health, Time.deltaTime * backdropLerpSpeed);
                 p2HealthBackdrop.value = Mathf.Lerp(p2HealthBackdrop.value, p2Health, Time.deltaTime * backdropLerpSpeed);
             }
 
-            // Example: Simulate damage for testing (remove in actual game)
-            if (Input.GetKeyDown(KeyCode.Q)) TakeDamage(1, 10f); // Damage P1
-            if (Input.GetKeyDown(KeyCode.P)) TakeDamage(2, 10f); // Damage P2
+            if (Input.GetKeyDown(KeyCode.Q)) TakeDamage(1, 10f);
+            if (Input.GetKeyDown(KeyCode.P)) TakeDamage(2, 10f);
 
             if (Input.GetKeyDown(KeyCode.F1) && (optionsCanvas == null || !optionsCanvas.gameObject.activeSelf))
             {
@@ -250,7 +248,6 @@ public class GameController : MonoBehaviour
         {
             optionsCanvas.gameObject.SetActive(true);
 
-            // Update sliders with current settings
             Slider[] sliders = optionsCanvas.GetComponentsInChildren<Slider>(true);
             foreach (Slider slider in sliders)
             {
@@ -317,21 +314,16 @@ public class GameController : MonoBehaviour
         {
             p1Health = Mathf.Max(0, p1Health - damage);
             if (p1HealthBar != null) p1HealthBar.value = p1Health;
-            if (p1Health <= 0) EndGame(2);
         }
         else
         {
             p2Health = Mathf.Max(0, p2Health - damage);
             if (p2HealthBar != null) p2HealthBar.value = p2Health;
-            if (p2Health <= 0) EndGame(1);
         }
     }
 
-    private void EndGame(int winner)
+    public float GetPlayerHealth(int player)
     {
-        Debug.Log($"Player {winner} wins!");
-        Time.timeScale = 0;
-        // Optionally show a win screen or transition back to MainMenu
-        SceneManager.LoadScene("MainMenu");
+        return player == 1 ? p1Health : p2Health;
     }
 }

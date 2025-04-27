@@ -2,129 +2,159 @@ using UnityEngine;
 
 public class Fighter : MonoBehaviour
 {
-    public float speed = 5f;
-    public int health = 100;
-    public bool isPlayer1 = true;
+    public float moveSpeed = 5f;
+    public float jumpForce = 5f;
     public GameObject projectilePrefab;
-    public float projectileSpeed = 8f;
+    public Transform projectileSpawnPoint;
+    public float projectileSpeed = 10f;
     public float projectileCooldown = 0.5f;
-    private float lastProjectileTime;
-    public Sprite idleSprite;
-    public Sprite walkSprite;
-    public Sprite attackSprite;
-    private SpriteRenderer spriteRenderer;
-    private float lastAttackTime;
+    public bool isPlayer1 = true;
+
     private Rigidbody2D rb;
-    public float jumpVelocity = 10f;
-    public float gravityScale = 3f;
-    public LayerMask groundLayer;
-    public float groundCheckDistance = 0.5f;
-    public bool facingRight = true;
+    private float horizontalInput;
+    private bool isGrounded;
+    private float lastProjectileTime;
+    private SpriteRenderer spriteRenderer;
+    private Vector3 originalSpawnPointLocalPosition; // Store the original local position
 
     void Start()
     {
-        spriteRenderer = GetComponent<SpriteRenderer>();
         rb = GetComponent<Rigidbody2D>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
         if (rb == null)
         {
-            Debug.LogError($"Rigidbody2D missing on {gameObject.name}! Please add a Rigidbody2D component.");
-            return;
+            Debug.LogError("Rigidbody2D not found on Fighter!");
         }
-        rb.gravityScale = gravityScale;
+        if (spriteRenderer == null)
+        {
+            Debug.LogError("SpriteRenderer not found on Fighter!");
+        }
+        if (projectilePrefab == null)
+        {
+            Debug.LogWarning($"Projectile Prefab not assigned on {gameObject.name}! Projectiles will not spawn.");
+        }
+        if (projectileSpawnPoint == null)
+        {
+            Debug.LogWarning($"Projectile Spawn Point not assigned on {gameObject.name}! Projectiles will spawn at the fighter's position.");
+        }
+        else
+        {
+            // Store the original local position of the spawn point
+            originalSpawnPointLocalPosition = projectileSpawnPoint.localPosition;
+        }
     }
 
     void Update()
     {
-        if (rb == null || MenuManager.IsPaused) return; // Skip if no Rigidbody2D or paused
-
-        if (health <= 0) return; // Stop if dead
-
-        // Handle movement
-        Move();
-
-        // Player 1 inputs
         if (isPlayer1)
         {
-            if (Input.GetKeyDown(KeyCode.W)) Jump();
-            if (Input.GetKeyDown(KeyCode.Q)) Attack(10);
-            if (Input.GetKeyDown(KeyCode.E) && Time.time - lastProjectileTime >= projectileCooldown)
+            horizontalInput = 0f;
+            if (Input.GetKey(KeyCode.A)) horizontalInput = -1f;
+            if (Input.GetKey(KeyCode.D)) horizontalInput = 1f;
+
+            if (Input.GetKeyDown(KeyCode.W) && isGrounded)
+            {
+                Jump();
+            }
+
+            if (Input.GetKeyDown(KeyCode.Space) && Time.time - lastProjectileTime >= projectileCooldown)
             {
                 ThrowProjectile();
-                lastProjectileTime = Time.time;
             }
         }
-        // Player 2 inputs
         else
         {
-            if (Input.GetKeyDown(KeyCode.UpArrow)) Jump();
-            if (Input.GetKeyDown(KeyCode.RightControl)) Attack(10);
+            horizontalInput = 0f;
+            if (Input.GetKey(KeyCode.LeftArrow)) horizontalInput = -1f;
+            if (Input.GetKey(KeyCode.RightArrow)) horizontalInput = 1f;
+
+            if (Input.GetKeyDown(KeyCode.UpArrow) && isGrounded)
+            {
+                Jump();
+            }
+
             if (Input.GetKeyDown(KeyCode.RightShift) && Time.time - lastProjectileTime >= projectileCooldown)
             {
                 ThrowProjectile();
-                lastProjectileTime = Time.time;
+            }
+        }
+
+        if (horizontalInput != 0f)
+        {
+            spriteRenderer.flipX = horizontalInput < 0;
+            // Adjust the projectile spawn point's position based on facing direction
+            if (projectileSpawnPoint != null)
+            {
+                Vector3 newLocalPosition = originalSpawnPointLocalPosition;
+                newLocalPosition.x = spriteRenderer.flipX ? -Mathf.Abs(originalSpawnPointLocalPosition.x) : Mathf.Abs(originalSpawnPointLocalPosition.x);
+                projectileSpawnPoint.localPosition = newLocalPosition;
             }
         }
     }
 
-    void Move()
+    void FixedUpdate()
     {
-        float moveInput = isPlayer1 ? Input.GetAxisRaw("Horizontal") : Input.GetAxisRaw("Horizontal2");
-        rb.linearVelocity = new Vector2(moveInput * speed, rb.linearVelocity.y);
-
-        // Update sprite based on movement
-        if (moveInput != 0)
+        if (rb != null)
         {
-            spriteRenderer.sprite = walkSprite;
-            if ((moveInput > 0 && !facingRight) || (moveInput < 0 && facingRight)) Flip();
+            Vector2 velocity = rb.linearVelocity;
+            velocity.x = horizontalInput * moveSpeed;
+            rb.linearVelocity = velocity;
         }
-        else if (Time.time - lastAttackTime > 0.5f)
-        {
-            spriteRenderer.sprite = idleSprite;
-        }
-    }
-
-    void Flip()
-    {
-        facingRight = !facingRight;
-        spriteRenderer.flipX = !facingRight;
     }
 
     void Jump()
     {
-        if (IsGrounded())
+        if (rb != null)
         {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpVelocity);
-        }
-    }
-
-    bool IsGrounded()
-    {
-        RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.down, groundCheckDistance, groundLayer);
-        return hit.collider != null;
-    }
-
-    public void Attack(int damage)
-    {
-        spriteRenderer.sprite = attackSprite;
-        lastAttackTime = Time.time;
-
-        // Attack logic can be expanded (e.g., hitbox detection)
-    }
-
-    public void TakeDamage(int damage)
-    {
-        health -= damage;
-        if (health <= 0)
-        {
-            Debug.Log(gameObject.name + " is defeated!");
+            rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+            isGrounded = false;
+            Debug.Log($"{gameObject.name} jumped");
         }
     }
 
     void ThrowProjectile()
     {
-        Vector2 spawnPosition = transform.position + (facingRight ? Vector3.right : Vector3.left) * 0.5f;
+        if (projectilePrefab == null)
+        {
+            Debug.LogWarning($"Cannot throw projectile: Projectile Prefab is null on {gameObject.name}!");
+            return;
+        }
+
+        Vector3 spawnPosition = (projectileSpawnPoint != null) ? projectileSpawnPoint.position : transform.position;
+        Debug.Log($"{gameObject.name} is throwing a projectile at position {spawnPosition}");
         GameObject projectile = Instantiate(projectilePrefab, spawnPosition, Quaternion.identity);
-        ProjectileComponent projectileComp = projectile.GetComponent<ProjectileComponent>();
-        projectileComp.Initialize(projectileSpeed, isPlayer1);
+        Rigidbody2D projectileRb = projectile.GetComponent<Rigidbody2D>();
+        if (projectileRb != null)
+        {
+            float direction = spriteRenderer.flipX ? -1f : 1f;
+            projectileRb.linearVelocity = new Vector2(direction * projectileSpeed, 0f);
+        }
+        else
+        {
+            Debug.LogWarning($"Projectile {projectile.name} does not have a Rigidbody2D!");
+        }
+        lastProjectileTime = Time.time;
+    }
+
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        Debug.Log($"{gameObject.name} collided with {collision.gameObject.name} (Tag: {collision.gameObject.tag})");
+        try
+        {
+            if (collision.gameObject.CompareTag("Ground"))
+            {
+                isGrounded = true;
+                Debug.Log($"{gameObject.name} is grounded");
+            }
+        }
+        catch (UnityException e)
+        {
+            Debug.LogWarning($"Error comparing tag 'Ground' on {collision.gameObject.name}: {e.Message}. Please ensure the 'Ground' tag is defined in the project.");
+            if (collision.gameObject.name.ToLower().Contains("ground") || collision.gameObject.name.ToLower().Contains("floor"))
+            {
+                isGrounded = true;
+                Debug.Log($"{gameObject.name} landed on {collision.gameObject.name} (using name-based fallback)");
+            }
+        }
     }
 }
