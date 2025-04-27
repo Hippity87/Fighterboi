@@ -9,6 +9,7 @@ public class Fighter : MonoBehaviour
     public float projectileSpeed = 10f;
     public float projectileCooldown = 0.5f;
     public bool isPlayer1 = true;
+    public int playerNumber { get { return isPlayer1 ? 1 : 2; } } // Player 1 or Player 2
 
     private Rigidbody2D rb;
     private float horizontalInput;
@@ -133,6 +134,18 @@ public class Fighter : MonoBehaviour
         {
             Debug.LogWarning($"Projectile {projectile.name} does not have a Rigidbody2D!");
         }
+
+        // Set the shooter on the projectile
+        ProjectileComponent projectileComponent = projectile.GetComponent<ProjectileComponent>();
+        if (projectileComponent != null)
+        {
+            projectileComponent.SetShooter(playerNumber);
+        }
+        else
+        {
+            Debug.LogWarning($"Projectile {projectile.name} does not have a ProjectileComponent!");
+        }
+
         lastProjectileTime = Time.time;
     }
 

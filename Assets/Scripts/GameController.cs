@@ -209,12 +209,25 @@ public class GameController : MonoBehaviour
         {
             if (p1HealthBackdrop != null && p2HealthBackdrop != null)
             {
-                p1HealthBackdrop.value = Mathf.Lerp(p1HealthBackdrop.value, p1Health, Time.deltaTime * backdropLerpSpeed);
-                p2HealthBackdrop.value = Mathf.Lerp(p2HealthBackdrop.value, p2Health, Time.deltaTime * backdropLerpSpeed);
-            }
+                // Only lerp if HP is above 0 to avoid lingering health bar visuals
+                if (p1Health > 0)
+                {
+                    p1HealthBackdrop.value = Mathf.Lerp(p1HealthBackdrop.value, p1Health, Time.deltaTime * backdropLerpSpeed);
+                }
+                else
+                {
+                    p1HealthBackdrop.value = 0;
+                }
 
-            if (Input.GetKeyDown(KeyCode.Q)) TakeDamage(1, 10f);
-            if (Input.GetKeyDown(KeyCode.P)) TakeDamage(2, 10f);
+                if (p2Health > 0)
+                {
+                    p2HealthBackdrop.value = Mathf.Lerp(p2HealthBackdrop.value, p2Health, Time.deltaTime * backdropLerpSpeed);
+                }
+                else
+                {
+                    p2HealthBackdrop.value = 0;
+                }
+            }
 
             if (Input.GetKeyDown(KeyCode.F1) && (optionsCanvas == null || !optionsCanvas.gameObject.activeSelf))
             {
@@ -312,14 +325,36 @@ public class GameController : MonoBehaviour
     {
         if (player == 1)
         {
+            Debug.Log($"Before damage - Player 1 HP: {p1Health}, Incoming damage: {damage}");
             p1Health = Mathf.Max(0, p1Health - damage);
             if (p1HealthBar != null) p1HealthBar.value = p1Health;
+            Debug.Log($"After damage - Player 1 HP: {p1Health}");
+            if (p1Health <= 0)
+            {
+                Debug.Log("Player 1 HP reached 0! Player 2 wins!");
+                EndGame(2);
+            }
         }
         else
         {
+            Debug.Log($"Before damage - Player 2 HP: {p2Health}, Incoming damage: {damage}");
             p2Health = Mathf.Max(0, p2Health - damage);
             if (p2HealthBar != null) p2HealthBar.value = p2Health;
+            Debug.Log($"After damage - Player 2 HP: {p2Health}");
+            if (p2Health <= 0)
+            {
+                Debug.Log("Player 2 HP reached 0! Player 1 wins!");
+                EndGame(1);
+            }
         }
+    }
+
+    private void EndGame(int winningPlayer)
+    {
+        gameStarted = false;
+        Time.timeScale = 1;
+        Debug.Log($"Player {winningPlayer} wins!");
+        SceneManager.LoadScene("MainMenu");
     }
 
     public float GetPlayerHealth(int player)

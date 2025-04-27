@@ -6,6 +6,7 @@ TagManager:
   tags:
   - MainMenuController
   - Ground
+  - PowerUp
   layers:
   - Default
   - TransparentFX
